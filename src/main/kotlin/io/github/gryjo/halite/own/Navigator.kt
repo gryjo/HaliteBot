@@ -21,7 +21,7 @@ class Navigator(val gameMap: GameMap) {
                 move = Navigation(ship, entity)
                         .navigateTowards(
                                 gameMap,
-                                Position(entity.xPos, entity.yPos),
+                                Position(entity.xPos - (Constants.WEAPON_RADIUS / 2), entity.yPos - (Constants.WEAPON_RADIUS / 2)),
                                 Constants.MAX_SPEED,
                                 true,
                                 Constants.MAX_NAVIGATION_CORRECTIONS,

@@ -24,14 +24,9 @@ class Commander(val gameMap: GameMap) {
 
     fun findBestMinePlanet(ship: Ship, maxShipsPerPlanet: Int = 1) : Planet? {
         val nonEnemy = gameMap.planets.values.filter { it.isOwn() || it.isFree()  }
-        var distMap = nonEnemy
-                .filter { it.dockedShips.size < maxShipsPerPlanet }
-                .associateBy { ship.getDistanceTo(it) }.toSortedMap()
-        if (distMap.size == 0) {
-            distMap = nonEnemy
+        val distMap = nonEnemy
                     .filter { !it.isFull }
                     .associateBy { ship.getDistanceTo(it) }.toSortedMap()
-        }
         return distMap.values.firstOrNull()
     }
 

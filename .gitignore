@@ -1,6 +1,7 @@
 # idea
 .idea/
 out/
+Halite_Bot.iml
 
 # gradle
 .gradle/

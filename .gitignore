@@ -1,0 +1,15 @@
+# idea
+.idea/
+out/
+
+# gradle
+.gradle/
+build/
+
+# halite
+halite.exe
+run_game.*
+
+# files
+*.log
+*.hlt

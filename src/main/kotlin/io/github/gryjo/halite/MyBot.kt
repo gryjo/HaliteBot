@@ -9,7 +9,7 @@ import io.github.gryjo.halite.own.Navigator
 
 fun main(args: Array<String>) {
     val networking = Networking()
-    val gameMap = networking.initialize("Gryjo V1.6")
+    val gameMap = networking.initialize("Gryjo V2.0")
 
     val commander = Commander(gameMap)
     val navigator = Navigator(gameMap)
@@ -20,13 +20,9 @@ fun main(args: Array<String>) {
         gameMap.updateMap(Networking.readLineIntoMetadata())
 
         Log.log("Turn: $turn")
-
-        gameMap.myPlayer.ships.values
-                .filter { it.dockingStatus == DockingStatus.Undocked }
-                .forEach { ship ->
-                    val entity = commander.findBestObject(ship)
-                    entity?.let { navigator.navigateToEntity(ship, entity) }
-                }
+        val freeShips = gameMap.myPlayer.ships.values.filter { it.dockingStatus == DockingStatus.Undocked }
+        val targets = commander.doTurn(freeShips)
+        navigator.addMovementTargets(targets)
         navigator.update()
         turn++
     }

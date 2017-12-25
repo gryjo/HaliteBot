@@ -1,8 +1,6 @@
 package io.github.gryjo.halite.core
 
-import java.util.ArrayList
-import java.util.TreeMap
-import java.util.Collections
+import java.util.*
 
 open class GameMap(val width: Int, val height: Int, val myPlayerId: Int) {
     val players: MutableList<Player>
@@ -57,7 +55,6 @@ open class GameMap(val width: Int, val height: Int, val myPlayerId: Int) {
     }
 
     open fun updateMap(mapMetadata: Metadata): GameMap {
-        Log.log("--- NEW TURN ---")
         val numberOfPlayers = MetadataParser.parsePlayerNum(mapMetadata)
 
         players.clear()

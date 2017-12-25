@@ -8,11 +8,12 @@ import io.github.gryjo.halite.core.*
 
 class Navigator(val gameMap: GameMap) {
 
-    val angularStepRad = Math.PI / 180.0
+    val ANGULAR_STEP_RAD = Math.PI / 180.0
+    val TRUST: Int = Constants.MAX_SPEED
 
     val moves: MutableList<Move> = mutableListOf()
 
-    fun navigateToEntity(ship: Ship, entity: Entity) {
+    fun navigateToEntity(ship: Ship, entity: Entity) : Move? {
         val move: Move?
 
         when (entity) {
@@ -22,10 +23,10 @@ class Navigator(val gameMap: GameMap) {
                         .navigateTowards(
                                 gameMap,
                                 Position(entity.xPos - (Constants.WEAPON_RADIUS / 2), entity.yPos - (Constants.WEAPON_RADIUS / 2)),
-                                Constants.MAX_SPEED,
+                                TRUST,
                                 true,
                                 Constants.MAX_NAVIGATION_CORRECTIONS,
-                                angularStepRad
+                                ANGULAR_STEP_RAD
                         )
             }
             is Planet -> {
@@ -33,13 +34,17 @@ class Navigator(val gameMap: GameMap) {
                 move = if (ship.canDock(entity)) {
                     DockMove(ship, entity)
                 } else {
-                    Navigation(ship, entity).navigateToDock(gameMap, Constants.MAX_SPEED)
+                    Navigation(ship, entity).navigateToDock(gameMap, TRUST)
                 }
             }
             else -> move = null
         }
 
-        move?.let { moves.add(it) }
+        return move
+    }
+
+    fun addMovementTargets(targets: Map<Ship, Entity>) {
+        targets.forEach { t, u -> val move = navigateToEntity(t, u); move?.let { moves.add(it) } }
     }
 
     fun update() {

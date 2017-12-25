@@ -8,26 +8,22 @@ import io.github.gryjo.halite.core.*
 
 class Commander(val gameMap: GameMap) {
 
-    val SLOT_WEIGHT = 25
-    val OWN_WEIGHT = 100
+    val SLOT_WEIGHT = 20
+    val OWN_WEIGHT = 20
 
     var turn: Int = 0
 
     val targetMap: MutableMap<Int, Entity> = HashMap()
 
     fun doTurn(ships: List<Ship>) : Map<Ship, Entity> {
-        if (turn == 0) {
-            val planet = findBestPlanet(ships[0])!!
-            targetMap.putAll(ships.associate { it.id to planet }.toMutableMap())
-        } else {
-            ships
-                    .filter { !targetMap.contains(it.id) || !isValidTarget(targetMap[it.id]!!)}
-                    .forEach {
-                        val entity = findBestObject(it)!!
-                        Log.log("Ship (${it.id}) ==> Entity(${entity.id})")
-                        targetMap.put(it.id, entity)
-                    }
-        }
+        ships
+                .filter { !targetMap.contains(it.id) || !isValidTarget(targetMap[it.id]!!)}
+                .forEach {
+                    val entity = findBestObject(it)!!
+                    Log.log("Ship (${it.id}) ==> Entity(${entity.id})")
+                    targetMap.put(it.id, entity)
+                }
+
 
         val lostShips = HashSet(targetMap.keys)
         lostShips.removeAll(ships.map { it.id })
@@ -42,7 +38,10 @@ class Commander(val gameMap: GameMap) {
     fun isValidTarget(entity: Entity) : Boolean {
         return when(entity) {
             is Ship -> gameMap.allShips.any { it.id == entity.id }
-            is Planet -> entity.isFree() || (entity.isOwn() && entity.freeSlots() > 0)
+            is Planet -> {
+                val planet = gameMap.planets[entity.id]!!
+                planet.isFree() || (planet.isOwn() && planet.freeSlots() > 0)
+            }
             else -> false
         }
     }

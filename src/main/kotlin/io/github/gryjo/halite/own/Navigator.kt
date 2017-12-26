@@ -32,7 +32,7 @@ class Navigator(val gameMap: GameMap) {
                                     ANGULAR_STEP_RAD
                             )
                 } else {
-                    doAttackManouver(ship, entity)
+                    attackShip(ship, entity)
                 }
             }
             is Planet -> {
@@ -49,7 +49,7 @@ class Navigator(val gameMap: GameMap) {
         return move
     }
 
-    fun doAttackManouver(ownShip: Ship, enemyShip: Ship) : Move? {
+    fun attackShip(ownShip: Ship, enemyShip: Ship) : Move? {
         return if (ownShip.weaponCooldown > 0) {
             val cp = ownShip.getClosestPoint(enemyShip, Constants.WEAPON_RADIUS * 2)
             Navigation(ownShip, enemyShip)

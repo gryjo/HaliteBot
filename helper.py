@@ -87,6 +87,7 @@ def run(force: bool = False):
     if not success:
         print("ABORTING: Build was not successful")
         return
+    os.makedirs(REPLAY_DIR)
     print()
     print("Starting Run!")
     start = time.perf_counter()
@@ -97,6 +98,25 @@ def run(force: bool = False):
     delta = time.perf_counter() - start
     print("RUN DONE ({:.3f}s)!".format(delta))
     print('REPLAY SAVED: "{:s}"'.format(data["replay"]))
+    print()
+    _print_run_info(data)
+
+
+def _print_run_info(data: dict):
+    rounds = max(data["stats"]["0"]["last_frame_alive"], data["stats"]["1"]["last_frame_alive"])
+    winner = 0 if data["stats"]["0"]["rank"] == "1" else 1
+    print('#Rounds: {:d}'.format(rounds))
+    print('Winner: {:d}'.format(winner))
+    print("Player 0:")
+    p0_ts = data["stats"]["0"]["total_ship_count"]
+    p0_dd = data["stats"]["0"]["damage_dealt"]
+    print('\tTotal Ships: {:d}'.format(p0_ts))
+    print('\tDamage Dealt: {:d}'.format(p0_dd))
+    print("Player 1:")
+    p1_ts = data["stats"]["1"]["total_ship_count"]
+    p1_dd = data["stats"]["1"]["damage_dealt"]
+    print('\tTotal Ships: {:d}'.format(p1_ts))
+    print('\tDamage Dealt: {:d}'.format(p1_dd))
 
 
 def submission(force: bool = False) -> bool:

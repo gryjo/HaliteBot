@@ -9,11 +9,20 @@ import kotlin.math.max
 
 class Commander(val gameMap: GameMap) {
 
-    enum class EntityType {
-        PLANET, SHIP
+    companion object {
+        enum class EntityType {
+            PLANET, SHIP
+        }
+
+        enum class Tactic {
+            NORMAL, CHEESE
+        }
+
+        val DOCKED_WEIGHT = 5
     }
 
-    val DOCKED_WEIGHT = 5
+    val ownId: Int = gameMap.myPlayerId
+    val playerCount: Int = gameMap.players.size
 
     var turn: Int = 0
 
@@ -21,6 +30,7 @@ class Commander(val gameMap: GameMap) {
 
     init {
         Log.log("[STATS]")
+        Log.log("Tactic: ${if (playerCount > 2) Tactic.NORMAL else Tactic.CHEESE}")
         Log.log("#Players: ${gameMap.players.size}")
         Log.log("#Planets: ${gameMap.planets.size}")
         Log.log("w: ${gameMap.width} / h: ${gameMap.height}")
@@ -29,6 +39,36 @@ class Commander(val gameMap: GameMap) {
     }
 
     fun doTurn(ships: List<Ship>) : Map<Ship, Entity> {
+        return if (playerCount > 2) {
+            doNormalTacticTurn(ships)
+        } else {
+            doCheeseTacticTurn(ships)
+        }
+    }
+
+    fun doCheeseTacticTurn(ships: List<Ship>) : Map<Ship, Entity> {
+        ships
+                .filter { !targetMap.contains(it.id) || !isValidTarget(targetMap[it.id]!!)}
+                .forEach {
+                    val entity = scoredEntities(it).filter { it.value is Ship }.maxBy { it.key }?.value!!
+                    Log.log("Ship (${it.id}) ==> Entity(${entity.id})")
+                    targetMap.put(it.id, Pair(if (entity is Ship) EntityType.SHIP else EntityType.PLANET, entity.id))
+                }
+
+
+        val lostShips = HashSet(targetMap.keys)
+        lostShips.removeAll(ships.map { it.id })
+        lostShips.forEach { targetMap.remove(it) }
+
+        turn++
+        return targetMap.mapKeys {
+            gameMap.myPlayer.ships[it.key]!!
+        }.mapValues {
+            entityForId(it.value)!!
+        }
+    }
+
+    fun doNormalTacticTurn(ships: List<Ship>) : Map<Ship, Entity> {
         ships
                 .filter { !targetMap.contains(it.id) || !isValidTarget(targetMap[it.id]!!)}
                 .forEach {
@@ -106,7 +146,6 @@ class Commander(val gameMap: GameMap) {
         }
     }
 
-    val ownId: Int = gameMap.myPlayerId
 
     inline fun Entity.isOwn(): Boolean = this.owner == ownId
     inline fun Entity.isEnemy(): Boolean = !this.isOwn() && !this.isFree()

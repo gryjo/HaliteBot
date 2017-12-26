@@ -29,6 +29,16 @@ open class Position(val xPos: Double, val yPos: Double) {
         return Position(x, y)
     }
 
+    fun getClosestPoint(target: Entity, radius: Double): Position {
+        val rad = target.radius + Constants.MIN_DISTANCE + radius
+        val angleRad = target.orientTowardsInRad(this)
+
+        val x = target.xPos + rad * Math.cos(angleRad)
+        val y = target.yPos + rad * Math.sin(angleRad)
+
+        return Position(x, y)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) {
             return true

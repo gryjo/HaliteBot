@@ -8,12 +8,28 @@ import io.github.gryjo.halite.core.*
 
 class Commander(val gameMap: GameMap) {
 
-    val SLOT_WEIGHT = 20
-    val OWN_WEIGHT = 20
+    enum class EntityType {
+        PLANET, SHIP
+    }
+
+    val SLOT_WEIGHT = gameMap.width * 0.08
+    val OWN_WEIGHT = gameMap.width * 0.05
+    val SHIP_PENALTY = gameMap.width * 0.20
 
     var turn: Int = 0
 
-    val targetMap: MutableMap<Int, Entity> = HashMap()
+    val targetMap: MutableMap<Int, Pair<EntityType, Int>> = HashMap()
+
+    init {
+        Log.log("[STATS]")
+        Log.log("#Players: ${gameMap.players.size}")
+        Log.log("#Planets: ${gameMap.planets.size}")
+        Log.log("w: ${gameMap.width} / h: ${gameMap.height}")
+        Log.log("SLOT_WEIGHT: $SLOT_WEIGHT")
+        Log.log("OWN_WEIGHT: $OWN_WEIGHT")
+        Log.log("SHIP_PENALTY: $SHIP_PENALTY")
+        Log.log("-".repeat(20))
+    }
 
     fun doTurn(ships: List<Ship>) : Map<Ship, Entity> {
         ships
@@ -21,7 +37,7 @@ class Commander(val gameMap: GameMap) {
                 .forEach {
                     val entity = findBestObject(it)!!
                     Log.log("Ship (${it.id}) ==> Entity(${entity.id})")
-                    targetMap.put(it.id, entity)
+                    targetMap.put(it.id, Pair(if (entity is Ship) EntityType.SHIP else EntityType.PLANET, entity.id))
                 }
 
 
@@ -32,69 +48,66 @@ class Commander(val gameMap: GameMap) {
         turn++
         return targetMap.mapKeys {
             gameMap.myPlayer.ships[it.key]!!
+        }.mapValues {
+            entityForId(it.value)!!
         }
     }
 
-    fun isValidTarget(entity: Entity) : Boolean {
+    fun entityForId(pair: Pair<EntityType, Int>) : Entity? {
+        return when(pair.first) {
+            EntityType.PLANET -> gameMap.planets[pair.second]
+            EntityType.SHIP -> gameMap.allShips.firstOrNull { it.id == pair.second }
+        }
+    }
+
+    fun isValidTarget(pair: Pair<EntityType, Int>) : Boolean {
+        val entity = entityForId(pair)
         return when(entity) {
-            is Ship -> gameMap.allShips.any { it.id == entity.id }
-            is Planet -> {
-                val planet = gameMap.planets[entity.id]!!
-                planet.isFree() || (planet.isOwn() && planet.freeSlots() > 0)
-            }
+            is Planet -> entity.isFree() || (entity.isOwn() && entity.freeSlots() > 0)
             else -> false
         }
     }
 
     fun findBestObject(ship: Ship) : Entity? {
-        return findBestPlanet(ship) ?: findNearestEnemyShip(ship)
+        return scoredEntities(ship).maxBy { it.key }?.value!!
     }
 
-    fun findBestPlanet(ship: Ship) : Planet? {
-        val planets = scoredPlanets(ship)
-        if (planets.isEmpty()) return null
-
-        val targets = planets
-                .filter { it.key > 0 }
-                .values
-                    .filter {
-                        val planet = it
-                        (it.freeSlots() - targetMap.values.filter { it is Planet }.filter { it.id == planet.id }.size) > 0
-                    }
-
-        return targets.firstOrNull()
-
+    fun scoredEntities(entity: Entity) : MutableMap<Double, Entity> {
+        val entities = gameMap.nearbyEntitiesByDistance(entity)
+        val maxDist = entities.maxBy { it.key }?.key!!
+        return entities.values.associateBy { scoreEntity(entity, it, maxDist) }.toSortedMap(Comparator<Double> { o1, o2 -> o2.compareTo(o1) })
     }
 
-    fun scoredPlanets(entity: Entity) : MutableMap<Double, Planet> {
-        val planets = gameMap.allPlanets.values.filter { !(it.isOwn() && it.isFull) && !it.isEnemy()}
-        val maxDist = gameMap.nearbyEntitiesByDistance(entity).maxBy { it.key }?.key
-        maxDist?.let {
-            return planets.associateBy { scorePlanet(entity, it, maxDist) }.toSortedMap(Comparator<Double> { o1, o2 -> o2.compareTo(o1) })
+    fun scoreEntity(entity: Entity, other: Entity, maxDist: Double) : Double {
+        return when (other) {
+            is Ship -> scoreShip(entity, other, maxDist)
+            is Planet -> scorePlanet(entity, other, maxDist)
+            else -> Double.MIN_VALUE
         }
-        return HashMap()
     }
 
     fun scorePlanet(entity: Entity, planet: Planet, maxDist: Double) : Double {
         val dist = entity.getDistanceTo(planet)
         val free = planet.isFree()
         val own = planet.isOwn()
-        val slots = planet.dockingSpots
+        val freeSlots = planet.freeSlots() - targetMap.values.filter { it.first == EntityType.PLANET }.filter { it.second == planet.id }.size
 
         return when {
-            free -> (maxDist - dist) + (slots * SLOT_WEIGHT)
-            own -> ((maxDist - dist) + (slots * SLOT_WEIGHT) + OWN_WEIGHT)
-            else -> -dist
+            free -> (maxDist - dist) + (freeSlots * SLOT_WEIGHT)
+            own -> if (freeSlots > 0) ((maxDist - dist) + (freeSlots * SLOT_WEIGHT) + OWN_WEIGHT) else Double.MIN_VALUE
+            else -> Double.MIN_VALUE
         }
     }
 
-    fun findNearestEnemyShip(ship: Ship) : Ship? {
-        val enemy = gameMap.allShips.filter { !it.isOwn() }
-        val distMap = enemy.associateBy { ship.getDistanceTo(it) }.toSortedMap()
-        return distMap.values.firstOrNull()
+    fun scoreShip(entity: Entity, ship: Ship, maxDist: Double) : Double {
+        val dist = entity.getDistanceTo(ship)
+        val own = ship.isOwn()
+
+        return when {
+            own -> -dist
+            else -> ((maxDist - dist) - SHIP_PENALTY)
+        }
     }
-
-
 
     val ownId: Int = gameMap.myPlayerId
 

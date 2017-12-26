@@ -92,7 +92,7 @@ class Commander(val gameMap: GameMap) {
         val freeSlots = planet.freeSlots() - targetMap.values.filter { it.first == EntityType.PLANET }.filter { it.second == planet.id }.size
 
         return when {
-            free -> ((maxDist - dist) + (freeSlots * SLOT_WEIGHT))
+            free -> ((maxDist - dist) + (planet.dockingSpots * SLOT_WEIGHT))
             own -> if (freeSlots > 0) ((maxDist - dist) + (freeSlots * SLOT_WEIGHT)) else Double.MIN_VALUE
             else -> Double.MIN_VALUE
         }

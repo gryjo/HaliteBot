@@ -1,6 +1,7 @@
 package io.github.gryjo.halite.own
 
 import io.github.gryjo.halite.core.*
+import kotlin.math.max
 
 /**
  * Created on 23.12.17.
@@ -12,8 +13,7 @@ class Commander(val gameMap: GameMap) {
         PLANET, SHIP
     }
 
-    val SLOT_WEIGHT = gameMap.width * 0.08
-    val SHIP_PENALTY = gameMap.width * 0.05
+    val SHIP_PENALTY = gameMap.width * 0.035
     val DOCKED_WEIGHT = 5
 
     var turn: Int = 0
@@ -25,7 +25,6 @@ class Commander(val gameMap: GameMap) {
         Log.log("#Players: ${gameMap.players.size}")
         Log.log("#Planets: ${gameMap.planets.size}")
         Log.log("w: ${gameMap.width} / h: ${gameMap.height}")
-        Log.log("SLOT_WEIGHT: $SLOT_WEIGHT")
         Log.log("SHIP_PENALTY: $SHIP_PENALTY")
         Log.log("-".repeat(20))
     }
@@ -92,8 +91,8 @@ class Commander(val gameMap: GameMap) {
         val freeSlots = planet.freeSlots() - targetMap.values.filter { it.first == EntityType.PLANET }.filter { it.second == planet.id }.size
 
         return when {
-            free -> ((maxDist - dist) + (planet.dockingSpots * SLOT_WEIGHT))
-            own -> if (freeSlots > 0) ((maxDist - dist) + (freeSlots * SLOT_WEIGHT)) else Double.MIN_VALUE
+            free -> (maxDist - dist)
+            own -> if (freeSlots > 0) (maxDist - dist) else Double.MIN_VALUE
             else -> Double.MIN_VALUE
         }
     }
@@ -101,10 +100,12 @@ class Commander(val gameMap: GameMap) {
     fun scoreShip(ownShip: Ship, enemyShip: Ship, maxDist: Double) : Double {
         val dist = ownShip.getDistanceTo(enemyShip)
         val own = enemyShip.isOwn()
+        val dockingWeight = if (enemyShip.dockingStatus == DockingStatus.Docked) DOCKED_WEIGHT else 0
+        val healthWeight = max(0.1, (Constants.BASE_SHIP_HEALTH / ownShip.health + 0.0))
 
         return when {
             own -> Double.MIN_VALUE
-            else -> ((maxDist - dist) - SHIP_PENALTY) * (Constants.BASE_SHIP_HEALTH / ownShip.health) + if (enemyShip.dockingStatus == DockingStatus.Docked) DOCKED_WEIGHT else 0
+            else -> (((maxDist - dist) - SHIP_PENALTY) + dockingWeight) * healthWeight
         }
     }
 

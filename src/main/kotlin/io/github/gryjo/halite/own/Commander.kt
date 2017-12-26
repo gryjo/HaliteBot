@@ -13,7 +13,6 @@ class Commander(val gameMap: GameMap) {
         PLANET, SHIP
     }
 
-    val SHIP_PENALTY = gameMap.width * 0.035
     val DOCKED_WEIGHT = 5
 
     var turn: Int = 0
@@ -25,7 +24,7 @@ class Commander(val gameMap: GameMap) {
         Log.log("#Players: ${gameMap.players.size}")
         Log.log("#Planets: ${gameMap.planets.size}")
         Log.log("w: ${gameMap.width} / h: ${gameMap.height}")
-        Log.log("SHIP_PENALTY: $SHIP_PENALTY")
+        Log.log("DOCKED_WEIGHT: $DOCKED_WEIGHT")
         Log.log("-".repeat(20))
     }
 
@@ -86,14 +85,12 @@ class Commander(val gameMap: GameMap) {
 
     fun scorePlanet(ship: Ship, planet: Planet, maxDist: Double) : Double {
         val dist = ship.getDistanceTo(planet)
-        val free = planet.isFree()
-        val own = planet.isOwn()
+        val enemy = planet.isEnemy()
         val freeSlots = planet.freeSlots() - targetMap.values.filter { it.first == EntityType.PLANET }.filter { it.second == planet.id }.size
 
         return when {
-            free -> (maxDist - dist)
-            own -> if (freeSlots > 0) (maxDist - dist) else Double.MIN_VALUE
-            else -> Double.MIN_VALUE
+            enemy -> Double.MIN_VALUE
+            else -> if (freeSlots > 0) (maxDist - dist) else Double.MIN_VALUE
         }
     }
 
@@ -105,7 +102,7 @@ class Commander(val gameMap: GameMap) {
 
         return when {
             own -> Double.MIN_VALUE
-            else -> (((maxDist - dist) - SHIP_PENALTY) + dockingWeight) * healthWeight
+            else -> ((maxDist - dist) + dockingWeight) * healthWeight
         }
     }
 

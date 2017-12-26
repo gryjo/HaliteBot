@@ -9,7 +9,7 @@ import io.github.gryjo.halite.own.Navigator
 
 fun main(args: Array<String>) {
     val networking = Networking()
-    val gameMap = networking.initialize("Gryjo V3.3")
+    val gameMap = networking.initialize("Gryjo V3.4")
 
     val commander = Commander(gameMap)
     val navigator = Navigator(gameMap)
